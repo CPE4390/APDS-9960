@@ -1,6 +1,7 @@
 #include <xc.h>
 #include "LCD.h"
 #include "APDS9960.h"
+#include "platform.h"
 
 #pragma config FOSC=HSPLL
 #pragma config WDTEN=OFF
@@ -15,7 +16,7 @@ void main(void) {
     LCDInit();
     lprintf(0, "APDS9960 Demo");
     InitAPDS9960();
-    char id = I2CReadRegister(APDS_ID);
+    char id = i2cReadRegister(APDS_ID);
     lprintf(1, "Chip ID = %d", id);
     __delay_ms(1000);
     ConfigInterrupts();

@@ -66,11 +66,6 @@ extern "C" {
 #endif
 
     void InitAPDS9960(void);
-    void I2CWriteRegister(unsigned char reg, unsigned char byte);
-    void I2CWriteRegisterWord(unsigned char reg, unsigned int word);
-    void I2CReadData(unsigned char reg, unsigned char *buffer, char count);
-    unsigned char I2CReadRegister(unsigned char reg);
-    void ClearInterrupt(unsigned char reg);
 
 #ifdef	__cplusplus
 }
