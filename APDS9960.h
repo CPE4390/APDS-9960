@@ -61,11 +61,51 @@
 #define APDS_GFIFO_L        0xfe
 #define APDS_GFIFO_R        0xff
 
+//Function flags
+#define PROXIMITY_ENABLE    0x04
+#define GESTURE_ENABLE      0x40
+#define ALS_ENABLE          0x02
+
+//Interrupt flags/enable
+#define PROXIMIT_INTERRUPT  0x20
+#define ALS_INTERRUPT       0x10
+#define GESTURE_INTERRUPT   0x04
+
+//Config bits
+#define POWER_ON            0x01
+#define WAIT_ENABLE         0x08
+#define WLONG               0x02
+#define SLEEP_AFTER_INT     0x10
+
+//Status bits
+#define CPSAT               0x80
+#define PGSAT               0x40
+#define PINT                0x20
+#define AINT                0x10
+#define GINT                0x04
+#define PVALID              0x02
+#define AVALID              0x01
+
+
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
-
+    typedef struct {
+        unsigned int cdata;
+        unsigned int rdata;
+        unsigned int gdata;
+        unsigned int bdata;
+    } RGBCdata;
+    
     void InitAPDS9960(void);
+    void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char sleepAfterInt);
+    unsigned char APDS9960GetStatus(void);
+    void APDS9960ClearAllInterrupts(void);
+    void APDS996ClearGestureInterrupt(void);
+    void APDS996ClearALSInterrupt(void);
+    void APDS996ClearProximityInterrupt(void);
+    char APDS9960GetALSData(RGBCdata *data);
 
 #ifdef	__cplusplus
 }

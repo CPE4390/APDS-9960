@@ -10,6 +10,8 @@
 void InitPins(void);
 void ConfigInterrupts(void);
 
+RGBCdata rgbcData;
+
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
     InitPins();
@@ -20,8 +22,15 @@ void main(void) {
     lprintf(1, "Chip ID = %d", id);
     __delay_ms(1000);
     ConfigInterrupts();
+    APDS9960Start(FUNC_ALS | ALS_INTERRUPT, 100, 0, 0);
     while (1) {
-        
+        if (APDS9960GetALSData(&rgbcData)) {
+            lprintf(0, "C=%d R=%d", rgbcData.cdata, rgbcData.rdata);
+            lprintf(1, "G=%d B=%d", rgbcData.gdata, rgbcData.bdata);
+        } else {
+            lprintf(0, "Error");
+            lprintf(1, "");
+        }
         __delay_ms(500);
     }
 }

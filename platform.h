@@ -8,6 +8,8 @@
 #ifndef PLATFORM_H
 #define	PLATFORM_H
 
+#define _XTAL_FREQ      32000000L
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
