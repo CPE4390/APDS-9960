@@ -11,6 +11,7 @@ void InitPins(void);
 void ConfigInterrupts(void);
 
 RGBCdata rgbcData;
+unsigned char proxData;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -22,15 +23,17 @@ void main(void) {
     lprintf(1, "Chip ID = %d", id);
     __delay_ms(1000);
     ConfigInterrupts();
-    APDS9960Start(FUNC_ALS | ALS_INTERRUPT, 100, 0, 0);
+    APDS9960Start(ALS_ENABLE | PROXIMITY_ENABLE | ALS_INTERRUPT, 100, 0, 0);
     while (1) {
-        if (APDS9960GetALSData(&rgbcData)) {
-            lprintf(0, "C=%d R=%d", rgbcData.cdata, rgbcData.rdata);
-            lprintf(1, "G=%d B=%d", rgbcData.gdata, rgbcData.bdata);
-        } else {
-            lprintf(0, "Error");
-            lprintf(1, "");
+        char status = APDS9960GetStatus();
+        if (status & AVALID) {
+            APDS9960GetALSData(&rgbcData);
         }
+        if (status & PVALID) {
+            proxData = APDS9960GetProximityData();
+        }
+        lprintf(0, "S%02x C%u R%u", rgbcData.cdata, rgbcData.rdata);
+        lprintf(1, "G%u B%u P%u", rgbcData.gdata, rgbcData.bdata, proxData);
         __delay_ms(500);
     }
 }
@@ -39,7 +42,7 @@ void InitPins(void) {
     LATD = 0; //Turn off all LED's
     TRISD = 0; //LED's are outputs
     //Set TRIS bits for any required peripherals here.
-    TRISB = 0b00000001; //Button0 is input;
+    TRISB = 0b00000011; //Button0 is input; RB1 is INT1
     INTCON2bits.RBPU = 0; //enable weak pullups on port B
 }
 
@@ -50,6 +53,9 @@ void ConfigInterrupts(void) {
     INTCON2bits.INTEDG0 = 0; //interrupt on falling edge
     INTCONbits.INT0IE = 1; //Enable the interrupt
     INTCONbits.INT0IF = 0; //Always clear the flag before enabling interrupts
+    INTCON2bits.INTEDG1 = 0;
+    INTCON3bits.INT1E = 1;
+    INTCON3bits.INT1IF = 0;
     INTCONbits.GIE = 1; //Turn on interrupts
 }
 
@@ -58,5 +64,10 @@ void __interrupt(high_priority) HighIsr(void) {
     if (INTCONbits.INT0IF == 1) {
         
         INTCONbits.INT0IF = 0; //must clear the flag to avoid recursive interrupts
+    }
+    if (INTCON3bits.INT1IF == 1) {
+        LATDbits.LATD1 ^= 1;
+        APDS9960ClearALSInterrupt();
+        INTCON3bits.INT1IF = 0; //must clear the flag to avoid recursive interrupts
     }
 }

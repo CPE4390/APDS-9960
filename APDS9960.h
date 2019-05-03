@@ -102,10 +102,11 @@ extern "C" {
     void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char sleepAfterInt);
     unsigned char APDS9960GetStatus(void);
     void APDS9960ClearAllInterrupts(void);
-    void APDS996ClearGestureInterrupt(void);
-    void APDS996ClearALSInterrupt(void);
-    void APDS996ClearProximityInterrupt(void);
+    void APDS9960ClearGestureInterrupt(void);
+    void APDS9960ClearALSInterrupt(void);
+    void APDS9960ClearProximityInterrupt(void);
     char APDS9960GetALSData(RGBCdata *data);
+    unsigned char APDS9960GetProximityData(void);
 
 #ifdef	__cplusplus
 }
