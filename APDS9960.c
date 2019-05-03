@@ -10,10 +10,10 @@ void InitAPDS9960(void) {
 
 void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char sleepAfterInt) {
     unsigned char byte = 0;
-    functions &= 0b01110110;
-    functions |= POWER_ON;
+    flags &= 0b01110110;
+    flags |= POWER_ON;
     if (wait != 0) {
-        functions |= WAIT_ENABLE;
+        flags |= WAIT_ENABLE;
         byte = -(unsigned char) wait;
         if (wlong) {
             i2cWriteRegister(APDS_CONFIG1, WLONG | 0x60);
@@ -29,7 +29,7 @@ void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char slee
         byte &= ~SLEEP_AFTER_INT;
     }
     i2cWriteRegister(APDS_CONFIG3, byte);
-    i2cWriteRegister(APDS_ENABLE, functions);
+    i2cWriteRegister(APDS_ENABLE, flags);
 }
 
 unsigned char APDS9960GetStatus(void) {
@@ -40,25 +40,22 @@ void APDS9960ClearAllInterrupts(void) {
     i2cClearInterrupt(APDS_AICLEAR);
 }
 
-void APDS996ClearGestureInterrupt(void) {
-    
+void APDS9960ClearGestureInterrupt(void) {
+
 }
 
-void APDS996ClearALSInterrupt(void) {
+void APDS9960ClearALSInterrupt(void) {
     i2cClearInterrupt(APDS_CICLEAR);
 }
 
-void APDS996ClearProximityInterrupt(void) {
+void APDS9960ClearProximityInterrupt(void) {
     i2cClearInterrupt(APDS_PICLEAR);
 }
 
-char APDS9960GetALSData(RGBCdata *data) {
-    unsigned char status = 0;
-    status = APDS9960GetStatus();
-    if (status & AVALID) {
-        i2cReadData(APDS_CDATAL, (unsigned char *) data, sizeof (RGBCdata));
-        return 1;
-    } else {
-        return 0;
-    }
+void APDS9960GetALSData(RGBCdata *data) {
+    i2cReadData(APDS_CDATAL, (unsigned char *) data, sizeof (RGBCdata));
+}
+
+unsigned char APDS9960GetProximityData(void) {
+    return i2cReadRegister(APDS_PDATA);
 }
