@@ -67,7 +67,7 @@
 #define ALS_ENABLE          0x02
 
 //Interrupt flags/enable
-#define PROXIMIT_INTERRUPT  0x20
+#define PROXIMITY_INTERRUPT  0x20
 #define ALS_INTERRUPT       0x10
 #define GESTURE_INTERRUPT   0x04
 
@@ -86,6 +86,32 @@
 #define PVALID              0x02
 #define AVALID              0x01
 
+//Settings
+#define PULSE_4US           0
+#define PULSE_8US           1
+#define PULSE_16US          2
+#define PULSE_32US          3
+
+
+#define LED_100MA           0
+#define LED_50MA            1
+#define LED_25MA            2
+#define LED_12_5MA          3
+
+#define PGAIN_1X            0
+#define PGAIN_2X            1
+#define PGAIN_4X            2
+#define PGAIN_8X            3
+
+#define AGAIN_1X            0
+#define AGAIN_4X            1
+#define AGAIN_16X           2
+#define AGAIN_64X           3
+
+#define LED_BOOST_100       0
+#define LED_BOOST_150       1
+#define LED_BOOST_200       2
+#define LED_BOOST_300       3
 
 
 #ifdef	__cplusplus
@@ -107,6 +133,17 @@ extern "C" {
     void APDS9960ClearProximityInterrupt(void);
     void APDS9960GetALSData(RGBCdata *data);
     unsigned char APDS9960GetProximityData(void);
+    void APDS9960SetProximityGain(unsigned char pgain);
+    unsigned char APDS9960GetProximityGain(void);
+    void APDS9960SetALSGain(unsigned char again);
+    unsigned char APDS9960GetALSGain(void);
+    void APDS9960SetLEDDriveCurrent(unsigned char ldrive, unsigned char boost);
+    void APDS9960GetLEDDriveCurrent(unsigned char *ldrive, unsigned char *boost);
+    void APDS9960SetProximityPulseValues(unsigned char pplen, unsigned char ppulse);
+    void APDS9960GetProximityPulseValues(unsigned char *pplen, unsigned char *ppulse);
+    void APDS9960SetALSIntegrationTime(unsigned int cycles);
+    unsigned int APDS9960GetALSMaxCount(void);
+    
 
 #ifdef	__cplusplus
 }

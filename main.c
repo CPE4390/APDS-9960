@@ -20,10 +20,13 @@ void main(void) {
     lprintf(0, "APDS9960 Demo");
     InitAPDS9960();
     char id = i2cReadRegister(APDS_ID);
-    lprintf(1, "Chip ID = %d", id);
-    __delay_ms(1000);
+    lprintf(1, "Chip ID = %#02x", id);
+    __delay_ms(2000);
     ConfigInterrupts();
-    APDS9960Start(ALS_ENABLE | PROXIMITY_ENABLE | ALS_INTERRUPT, 100, 0, 0);
+    APDS9960SetProximityGain(PGAIN_4X);
+    APDS9960SetALSGain(AGAIN_4X);
+    APDS9960SetALSIntegrationTime(1);
+    APDS9960Start(ALS_ENABLE | PROXIMITY_ENABLE | PROXIMITY_INTERRUPT, 100, 1, 0);
     while (1) {
         char status = APDS9960GetStatus();
         if (status & AVALID) {
@@ -32,7 +35,7 @@ void main(void) {
         if (status & PVALID) {
             proxData = APDS9960GetProximityData();
         }
-        lprintf(0, "S%02x C%u R%u", rgbcData.cdata, rgbcData.rdata);
+        lprintf(0, "S%02x C%u R%u", status, rgbcData.cdata, rgbcData.rdata);
         lprintf(1, "G%u B%u P%u", rgbcData.gdata, rgbcData.bdata, proxData);
         __delay_ms(500);
     }
@@ -47,7 +50,6 @@ void InitPins(void) {
 }
 
 void ConfigInterrupts(void) {
-
     RCONbits.IPEN = 0; //no priorities.
     //set up INT0 to interrupt on falling edge
     INTCON2bits.INTEDG0 = 0; //interrupt on falling edge
@@ -67,7 +69,7 @@ void __interrupt(high_priority) HighIsr(void) {
     }
     if (INTCON3bits.INT1IF == 1) {
         LATDbits.LATD1 ^= 1;
-        APDS9960ClearALSInterrupt();
+        APDS9960ClearAllInterrupts();
         INTCON3bits.INT1IF = 0; //must clear the flag to avoid recursive interrupts
     }
 }
