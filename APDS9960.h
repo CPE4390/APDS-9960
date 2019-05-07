@@ -124,27 +124,56 @@ extern "C" {
         unsigned int bdata;
     } RGBCdata;
     
+    typedef struct {
+        unsigned int cycles;
+        unsigned int lowThreshold;
+        unsigned int highThreshold;
+        unsigned int persistence : 4;
+        unsigned int gain : 2;
+        unsigned int reserved : 2;
+    } ALSConfig;
+    
+    typedef struct {
+        unsigned char highThreshold;
+        unsigned char lowThreshold;
+        char urOffset;
+        char dlOffset;
+        unsigned char pulses;
+        unsigned int persistence : 4;
+        unsigned int pulseLength : 2;
+        unsigned int gain : 2;
+        unsigned int pcmp : 1;
+        unsigned int mask_u : 1;
+        unsigned int mask_d : 1;
+        unsigned int mask_l : 1;
+        unsigned int mask_r : 1;
+        unsigned int reserved : 3;
+    } ProximityConfig;
+    
     void InitAPDS9960(void);
     void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char sleepAfterInt);
     unsigned char APDS9960GetStatus(void);
+    
+    //Interrupt clear functions
     void APDS9960ClearAllInterrupts(void);
-    void APDS9960ClearGestureInterrupt(void);
     void APDS9960ClearALSInterrupt(void);
     void APDS9960ClearProximityInterrupt(void);
+    
+    //ALS functions
     void APDS9960GetALSData(RGBCdata *data);
+    void APDS9960ReadALSConfig(ALSConfig *config);
+    void APDS9960SetALSConfig(const ALSConfig *config);
+    unsigned int APDS9960ALSMaxCount(const ALSConfig *config);
+    
+    //Proximity functions
     unsigned char APDS9960GetProximityData(void);
-    void APDS9960SetProximityGain(unsigned char pgain);
-    unsigned char APDS9960GetProximityGain(void);
-    void APDS9960SetALSGain(unsigned char again);
-    unsigned char APDS9960GetALSGain(void);
+    void APDS9960ReadProximityConfig(ProximityConfig *config);
+    void APDS9960SetProximityConfig(const ProximityConfig *config);
+    
+    //LED current control
     void APDS9960SetLEDDriveCurrent(unsigned char ldrive, unsigned char boost);
     void APDS9960GetLEDDriveCurrent(unsigned char *ldrive, unsigned char *boost);
-    void APDS9960SetProximityPulseValues(unsigned char pplen, unsigned char ppulse);
-    void APDS9960GetProximityPulseValues(unsigned char *pplen, unsigned char *ppulse);
-    void APDS9960SetALSIntegrationTime(unsigned int cycles);
-    unsigned int APDS9960GetALSMaxCount(void);
     
-
 #ifdef	__cplusplus
 }
 #endif

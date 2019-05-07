@@ -44,10 +44,6 @@ void APDS9960ClearAllInterrupts(void) {
     i2cClearInterrupt(APDS_AICLEAR);
 }
 
-void APDS9960ClearGestureInterrupt(void) {
-
-}
-
 void APDS9960ClearALSInterrupt(void) {
     i2cClearInterrupt(APDS_CICLEAR);
 }
@@ -64,35 +60,49 @@ unsigned char APDS9960GetProximityData(void) {
     return i2cReadRegister(APDS_PDATA);
 }
 
-void APDS9960SetProximityGain(unsigned char pgain) {
-    unsigned char value;
-    value = i2cReadRegister(APDS_CONTROL);
-    value &= 0b11110011;
-    pgain &= 0b00000011;
-    value |= (pgain << 2);
-    i2cWriteRegister(APDS_CONTROL, value);
-}
-unsigned char APDS9960GetProximityGain(void) {
-    unsigned char value;
-    value = i2cReadRegister(APDS_CONTROL);
-    value &= 0b00001100;
-    value >>= 2;
-    return value;
+void APDS9960ReadALSConfig(ALSConfig *config) {
+    unsigned char regValue;
+    regValue = i2cReadRegister(APDS_ATIME);
+    if (regValue == 0) {
+        config->cycles = 256;
+    } else {
+        config->cycles = (unsigned int) (-regValue);
+    }
+    i2cReadData(APDS_AILTL, (unsigned char *)&(config->lowThreshold), sizeof(config->lowThreshold));
+    i2cReadData(APDS_AIHTL, (unsigned char *)&(config->highThreshold), sizeof(config->highThreshold));
+    regValue = i2cReadRegister(APDS_PERS);
+    config->persistence = regValue & 0b00001111;
+    regValue = i2cReadRegister(APDS_CONTROL);
+    config->gain = regValue & 0b00000011;
 }
 
-void APDS9960SetALSGain(unsigned char again) {
-    unsigned char value;
-    value = i2cReadRegister(APDS_CONTROL);
-    value &= 0b11111100;
-    again &= 0b00000011;
-    value |= again;
-    i2cWriteRegister(APDS_CONTROL, value);
+void APDS9960SetALSConfig(const ALSConfig *config) {
+    unsigned char regValue;
+    if (config->cycles >= 256) {
+        regValue = 0;
+    } else {
+        regValue = -((unsigned char) config->cycles);
+    }
+    i2cWriteRegister(APDS_ATIME, regValue);
+    i2cWriteRegisterWord(APDS_AILTL, config->lowThreshold);
+    i2cWriteRegisterWord(APDS_AIHTL, config->highThreshold);
+    regValue = i2cReadRegister(APDS_PERS);
+    regValue &= 0b11110000;
+    regValue |= config->persistence;
+    i2cWriteRegister(APDS_PERS, regValue);
+    regValue = i2cReadRegister(APDS_CONTROL);
+    regValue &= 0b11111100;
+    regValue |= config->gain;
+    i2cWriteRegister(APDS_CONTROL, regValue);
 }
-unsigned char APDS9960GetALSGain(void) {
-    unsigned char value;
-    value = i2cReadRegister(APDS_CONTROL);
-    value &= 0b00000011;
-    return value;
+
+unsigned int APDS9960ALSMaxCount(const ALSConfig *config) {
+    long maxCount;
+    maxCount = config->cycles * 1025;
+    if (maxCount > 65535) {
+        maxCount = 65535;
+    }
+    return (unsigned int) maxCount;
 }
 
 void APDS9960SetLEDDriveCurrent(unsigned char ldrive, unsigned char boost) {
@@ -117,45 +127,54 @@ void APDS9960GetLEDDriveCurrent(unsigned char *ldrive, unsigned char *boost) {
     *boost = (value & 0b00110000) >> 4;
 }
 
-void APDS9960SetProximityPulseValues(unsigned char pplen, unsigned char pulses) {
-    unsigned char value;
-    value = pplen << 6;
-    if (pulses > 64) {
-        pulses = 64;
-    }
-    value |=  pulses - 1;
-    i2cWriteRegister(APDS_PPULSE, value);
+void APDS9960ReadProximityConfig(ProximityConfig *config) {
+    unsigned char regValue;
+    config->lowThreshold = i2cReadRegister(APDS_PILT);
+    config->highThreshold = i2cReadRegister(APDS_PIHT);
+    regValue = i2cReadRegister(APDS_PERS);
+    config->persistence = regValue >> 4;
+    regValue = i2cReadRegister(APDS_PPULSE);
+    config->pulseLength = regValue >> 6;
+    config->pulses = (regValue & 0b00111111) + 1;
+    regValue = i2cReadRegister(APDS_CONTROL);
+    regValue &= 0b00001100;
+    config->gain = regValue >> 2;
+    config->urOffset = i2cReadRegister(APDS_POFFSET_UR);
+    config->dlOffset = i2cReadRegister(APDS_POFFSET_DL);
+    regValue = i2cReadRegister(APDS_CONFIG3);
+    config->pcmp = (regValue & 0b00100000) >> 5;
+    config->mask_u = (regValue & 0b00001000) >> 3;
+    config->mask_d = (regValue & 0b00000100) >> 2;
+    config->mask_l = (regValue & 0b00000010) >> 1;
+    config->mask_r = (regValue & 0b00000001);
 }
 
-void APDS9960GetProximityPulseValues(unsigned char *pplen, unsigned char *pulses) {
-    unsigned char value;
-    value = i2cReadRegister(APDS_PPULSE);
-    *pplen = value >> 6;
-    *pulses = (value & 0b00111111) + 1;
-}
-
-void APDS9960SetALSIntegrationTime(unsigned int cycles) {
-    unsigned char atime;
-    if (cycles >= 256) {
-        atime = 0;
-    } else {
-        atime = -((unsigned char) cycles);
+void APDS9960SetProximityConfig(const ProximityConfig *config) {
+    unsigned char regValue;
+    i2cWriteRegister(APDS_PILT, config->lowThreshold);
+    i2cWriteRegister(APDS_PIHT, config->highThreshold);
+    regValue = i2cReadRegister(APDS_PERS);
+    regValue &= 0b00001111;
+    regValue |= (config->persistence << 4);
+    i2cWriteRegister(APDS_PERS, regValue);
+    regValue = config->pulseLength;
+    regValue <<= 6;
+    if (config->pulses > 0) {
+        regValue |= ((config->pulses - 1) & 0b00111111);
     }
-    i2cWriteRegister(APDS_ATIME, atime);
-}
-
-unsigned int APDS9960GetALSMaxCount(void) {
-    unsigned char atime;
-    long cycles;
-    atime = i2cReadRegister(APDS_ATIME);
-    if (atime == 0) {
-        cycles = 256;
-    } else {
-        cycles = (unsigned char)(-atime);
-    }
-    cycles *= 1025;
-    if (cycles > 65535) {
-        cycles = 65535;
-    }
-    return (unsigned int)cycles;
+    i2cWriteRegister(APDS_PPULSE, regValue);
+    regValue = i2cReadRegister(APDS_CONTROL);
+    regValue &= 0b11110011;
+    regValue |= (config->gain << 2);
+    i2cWriteRegister(APDS_CONTROL, regValue);
+    i2cWriteRegister(APDS_POFFSET_UR, config->urOffset);
+    i2cWriteRegister(APDS_POFFSET_DL, config->dlOffset);
+    regValue = i2cReadRegister(APDS_CONFIG3);
+    regValue &= 0b00010000;
+    regValue |= config->pcmp << 5;
+    regValue |= config->mask_u << 3;
+    regValue |= config->mask_d << 2;
+    regValue |= config->mask_l << 1;
+    regValue |= config->mask_r;
+    i2cWriteRegister(APDS_CONFIG3, regValue);
 }

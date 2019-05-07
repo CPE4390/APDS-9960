@@ -12,6 +12,8 @@ void ConfigInterrupts(void);
 
 RGBCdata rgbcData;
 unsigned char proxData;
+ProximityConfig proxConfig;
+ALSConfig alsConfig;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -23,10 +25,18 @@ void main(void) {
     lprintf(1, "Chip ID = %#02x", id);
     __delay_ms(2000);
     ConfigInterrupts();
-    APDS9960SetProximityGain(PGAIN_4X);
-    APDS9960SetALSGain(AGAIN_4X);
-    APDS9960SetALSIntegrationTime(1);
-    APDS9960Start(ALS_ENABLE | PROXIMITY_ENABLE | PROXIMITY_INTERRUPT, 100, 1, 0);
+    APDS9960ReadALSConfig(&alsConfig);
+    alsConfig.cycles = 2;
+    alsConfig.gain = AGAIN_16X;
+    APDS9960SetALSConfig(&alsConfig);
+    APDS9960ReadProximityConfig(&proxConfig);
+    proxConfig.gain = PGAIN_8X;
+    proxConfig.pulses = 8;
+    proxConfig.highThreshold = 100;
+    proxConfig.lowThreshold = 0;
+    proxConfig.persistence = 5;
+    APDS9960SetProximityConfig(&proxConfig);
+    APDS9960Start(PROXIMITY_ENABLE | PROXIMITY_INTERRUPT, 50, 1, 0);
     while (1) {
         char status = APDS9960GetStatus();
         if (status & AVALID) {
