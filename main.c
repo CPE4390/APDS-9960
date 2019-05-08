@@ -26,33 +26,15 @@ void main(void) {
     lprintf(1, "Chip ID = %#02x", id);
     __delay_ms(2000);
     ConfigInterrupts();
-    APDS9960ReadALSConfig(&alsConfig);
-    alsConfig.cycles = 10;
-    alsConfig.gain = AGAIN_16X;
-    APDS9960SetALSConfig(&alsConfig);
-    APDS9960ReadProximityConfig(&proxConfig);
     proxConfig.gain = PGAIN_8X;
     proxConfig.pulses = 8;
     proxConfig.highThreshold = 100;
     proxConfig.lowThreshold = 0;
     proxConfig.persistence = 2;
     APDS9960SetProximityConfig(&proxConfig);
-    APDS9960Start(PROXIMITY_ENABLE | PROXIMITY_INTERRUPT, 10, 0, 0);
+    APDS9960Start(PROXIMITY_ENABLE, PROXIMITY_INTERRUPT, 10, 0, 0);
     while (1) {
-        if (toggle) {
-            
-            toggle = 0;
-        }
-//        char status = APDS9960GetStatus();
-//        if (status & AVALID) {
-//            APDS9960GetALSData(&rgbcData);
-//        }
-//        if (status & PVALID) {
-//            proxData = APDS9960GetProximityData();
-//        }
-//        lprintf(0, "S%02x C%u R%u", status, rgbcData.cdata, rgbcData.rdata);
-//        lprintf(1, "G%u B%u P%u", rgbcData.gdata, rgbcData.bdata, proxData);
-//        __delay_ms(500);
+
     }
 }
 

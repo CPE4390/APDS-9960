@@ -8,12 +8,13 @@ void InitAPDS9960(void) {
     i2cWriteRegister(APDS_ENABLE, POWER_ON);
 }
 
-void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char sleepAfterInt) {
-    unsigned char value = 0;
-    flags &= 0b01110110;
-    flags |= POWER_ON;
+void APDS9960Start(unsigned char enable, unsigned char interrupts,
+        unsigned int wait, char wlong, char sleepAfterInt) {
+    unsigned char value;
+    enable &= 0b01000110;
+    enable |= POWER_ON;
     if (wait != 0) {
-        flags |= WAIT_ENABLE;
+        enable |= WAIT_ENABLE;
         if (wait >= 256) {
             value = 0;
         } else {
@@ -33,7 +34,27 @@ void APDS9960Start(unsigned char flags, unsigned int wait, char wlong, char slee
         value &= ~SLEEP_AFTER_INT;
     }
     i2cWriteRegister(APDS_CONFIG3, value);
-    i2cWriteRegister(APDS_ENABLE, flags);
+    enable |= (interrupts & 0b00110000); //ALS and Prox interrupts
+    value = i2cReadRegister(APDS_GCONF4);
+    if (interrupts & GESTURE_INTERRUPT) {
+        value |= 0b00000010;
+    } else {
+        value &= 0b11111101;
+    }
+    i2cWriteRegister(APDS_GCONF4, value);
+    value = i2cReadRegister(APDS_CONFIG2);
+    if (interrupts & CPSAT_INTERRUPT) {
+        value |= 0b01000000;
+    } else {
+        value &= 0b10111111;
+    }
+    if (interrupts & PGSAT_INTERRUPT) {
+        value |= 0b10000000;
+    } else {
+        value &= 0b01111111;
+    }
+    i2cWriteRegister(APDS_CONFIG2, value);
+    i2cWriteRegister(APDS_ENABLE, enable);
 }
 
 unsigned char APDS9960GetStatus(void) {
@@ -68,8 +89,8 @@ void APDS9960ReadALSConfig(ALSConfig *config) {
     } else {
         config->cycles = (unsigned int) (-regValue);
     }
-    i2cReadData(APDS_AILTL, (unsigned char *)&(config->lowThreshold), sizeof(config->lowThreshold));
-    i2cReadData(APDS_AIHTL, (unsigned char *)&(config->highThreshold), sizeof(config->highThreshold));
+    i2cReadData(APDS_AILTL, (unsigned char *) &(config->lowThreshold), sizeof (config->lowThreshold));
+    i2cReadData(APDS_AIHTL, (unsigned char *) &(config->highThreshold), sizeof (config->highThreshold));
     regValue = i2cReadRegister(APDS_PERS);
     config->persistence = regValue & 0b00001111;
     regValue = i2cReadRegister(APDS_CONTROL);
@@ -177,4 +198,79 @@ void APDS9960SetProximityConfig(const ProximityConfig *config) {
     regValue |= config->mask_l << 1;
     regValue |= config->mask_r;
     i2cWriteRegister(APDS_CONFIG3, regValue);
+}
+
+void APDS9960ReadGestureConfig(GestureConfig *config) {
+    unsigned char regValue;
+
+    config->enterThreshold = i2cReadRegister(APDS_GPENTH);
+    config->exitThreshold = i2cReadRegister(APDS_GEXTH);
+    regValue = i2cReadRegister(APDS_GCONF1);
+    config->fifoThreshold = regValue >> 6;
+    config->exitMask = (regValue & 0b00111100) >> 2;
+    config->exitPersistence = regValue & 0b00000011;
+    regValue = i2cReadRegister(APDS_GCONF2);
+    config->gain = regValue >> 5;
+    config->ledDriveStrength = (regValue & 0b00011000) >> 3;
+    config->waitTime = regValue & 0b00000111;
+    config->offset_u = i2cReadRegister(APDS_GOFFSET_U);
+    config->offset_d = i2cReadRegister(APDS_GOFFSET_D);
+    config->offset_l = i2cReadRegister(APDS_GOFFSET_L);
+    config->offset_r = i2cReadRegister(APDS_GOFFSET_R);
+    regValue = i2cReadRegister(APDS_GPULSE);
+    config->pulseLength = regValue >> 6;
+    config->pulses = (regValue & 0b00111111) + 1;
+    config->dimensionSelect = i2cReadRegister(APDS_GCONF3);
+}
+
+void APDS9960SetGestureConfig(GestureConfig *config) {
+    unsigned char regValue;
+    i2cWriteRegister(APDS_GPENTH, config->enterThreshold & 0b11101111); //bit 4 must be 0 per datasheet
+    i2cWriteRegister(APDS_GEXTH, config->exitThreshold);
+    regValue = config->fifoThreshold << 6;
+    regValue |= config->exitMask << 2;
+    regValue |= config->exitPersistence;
+    i2cWriteRegister(APDS_GCONF1, regValue);
+    regValue = config->gain << 5;
+    regValue |= config->ledDriveStrength << 3;
+    regValue |= config->waitTime;
+    i2cWriteRegister(APDS_GCONF2, regValue);
+    i2cWriteRegister(APDS_GOFFSET_U, config->offset_u);
+    i2cWriteRegister(APDS_GOFFSET_D, config->offset_d);
+    i2cWriteRegister(APDS_GOFFSET_L, config->offset_l);
+    i2cWriteRegister(APDS_GOFFSET_R, config->offset_r);
+    regValue = config->pulseLength << 6;
+    if (config->pulses > 0) {
+        regValue |= (config->pulses - 1) & 0b00111111;
+    }
+    i2cWriteRegister(APDS_GPULSE, regValue);
+    i2cWriteRegister(APDS_GCONF3, config->dimensionSelect);
+}
+
+unsigned char APDS9960GetGestureStatus(void) {
+    return i2cReadRegister(APDS_GSTATUS);
+}
+
+void APDS9960SetGestureMode(unsigned char mode) {
+    unsigned char regValue;
+    regValue = i2cReadRegister(APDS_GCONF4);
+    if (mode) {
+        regValue |= 0b00000001;
+    } else {
+        regValue &= 0b11111110;
+    }
+    i2cWriteRegister(APDS_GCONF4, regValue);
+}
+
+unsigned char APDS9960GetGestureMode(void) {
+    unsigned char mode;
+    mode = i2cReadRegister(APDS_GCONF4);
+    return mode & 0b00000001;
+}
+
+void APDS9960ClearGestureFIFO(void) {
+    unsigned char regValue;
+    regValue = i2cReadRegister(APDS_GCONF4);
+    regValue |= 0b00000100;
+    i2cWriteRegister(APDS_GCONF4, regValue);
 }
