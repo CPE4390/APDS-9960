@@ -14,6 +14,7 @@ RGBCdata rgbcData;
 unsigned char proxData;
 ProximityConfig proxConfig;
 ALSConfig alsConfig;
+volatile char toggle = 0;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -26,7 +27,7 @@ void main(void) {
     __delay_ms(2000);
     ConfigInterrupts();
     APDS9960ReadALSConfig(&alsConfig);
-    alsConfig.cycles = 2;
+    alsConfig.cycles = 10;
     alsConfig.gain = AGAIN_16X;
     APDS9960SetALSConfig(&alsConfig);
     APDS9960ReadProximityConfig(&proxConfig);
@@ -34,20 +35,24 @@ void main(void) {
     proxConfig.pulses = 8;
     proxConfig.highThreshold = 100;
     proxConfig.lowThreshold = 0;
-    proxConfig.persistence = 5;
+    proxConfig.persistence = 2;
     APDS9960SetProximityConfig(&proxConfig);
-    APDS9960Start(PROXIMITY_ENABLE | PROXIMITY_INTERRUPT, 50, 1, 0);
+    APDS9960Start(PROXIMITY_ENABLE | PROXIMITY_INTERRUPT, 10, 0, 0);
     while (1) {
-        char status = APDS9960GetStatus();
-        if (status & AVALID) {
-            APDS9960GetALSData(&rgbcData);
+        if (toggle) {
+            
+            toggle = 0;
         }
-        if (status & PVALID) {
-            proxData = APDS9960GetProximityData();
-        }
-        lprintf(0, "S%02x C%u R%u", status, rgbcData.cdata, rgbcData.rdata);
-        lprintf(1, "G%u B%u P%u", rgbcData.gdata, rgbcData.bdata, proxData);
-        __delay_ms(500);
+//        char status = APDS9960GetStatus();
+//        if (status & AVALID) {
+//            APDS9960GetALSData(&rgbcData);
+//        }
+//        if (status & PVALID) {
+//            proxData = APDS9960GetProximityData();
+//        }
+//        lprintf(0, "S%02x C%u R%u", status, rgbcData.cdata, rgbcData.rdata);
+//        lprintf(1, "G%u B%u P%u", rgbcData.gdata, rgbcData.bdata, proxData);
+//        __delay_ms(500);
     }
 }
 
@@ -78,7 +83,15 @@ void __interrupt(high_priority) HighIsr(void) {
         INTCONbits.INT0IF = 0; //must clear the flag to avoid recursive interrupts
     }
     if (INTCON3bits.INT1IF == 1) {
+        if (proxConfig.highThreshold == 100) {
+            proxConfig.highThreshold = 255;
+            proxConfig.lowThreshold = 75;
+        } else {
+            proxConfig.highThreshold = 100;
+            proxConfig.lowThreshold = 0;
+        }
         LATDbits.LATD1 ^= 1;
+        APDS9960SetProximityConfig(&proxConfig);    
         APDS9960ClearAllInterrupts();
         INTCON3bits.INT1IF = 0; //must clear the flag to avoid recursive interrupts
     }
