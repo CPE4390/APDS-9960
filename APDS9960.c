@@ -274,3 +274,18 @@ void APDS9960ClearGestureFIFO(void) {
     regValue |= 0b00000100;
     i2cWriteRegister(APDS_GCONF4, regValue);
 }
+
+unsigned char APDS9960ReadGestureFIFO(GestureData *data, unsigned char max) {
+    unsigned char dataPoints;
+    dataPoints = i2cReadRegister(APDS_GFLVL);
+    if (dataPoints > max) {
+        dataPoints = max;
+    }
+    i2cReadData(APDS_GFIFO_U, (unsigned char *)data, dataPoints * 4);
+    return dataPoints;
+}
+
+unsigned char APDS9960ProcessGesture(GestureData *data, int len, char done) {
+    
+    return GESTURE_UNKNOWN;
+}

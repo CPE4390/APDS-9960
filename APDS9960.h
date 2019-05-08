@@ -73,11 +73,11 @@
 #define CPSAT_INTERRUPT     0x80
 #define PGSAT_INTERRUPT     0x40
 
-//Status bits
+//Status flags
 #define PVALID              0x02
 #define AVALID              0x01
 
-//Gesture status bits
+//Gesture status flags
 #define GFOV                0x02
 #define GVALID              0x01
 
@@ -158,16 +158,26 @@
 #define GDIMS_LR            2
 #define GDIMS_ALL           0  // or 3 ???
 
+//Gesture types
+#define GESTURE_UNKNOWN     0x00
+#define GESTURE_UP          0x01
+#define GESTURE_DOWN        0x02
+#define GESTURE_LEFT        0x04
+#define GESTURE_RIGHT       0x08
+#define GESTURE_NEAR        0x10
+#define GESTURE_FAR         0x20
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
+
     typedef struct {
         unsigned int cdata;
         unsigned int rdata;
         unsigned int gdata;
         unsigned int bdata;
     } RGBCdata;
-    
+
     typedef struct {
         unsigned int cycles;
         unsigned int lowThreshold;
@@ -176,7 +186,7 @@ extern "C" {
         unsigned int gain : 2;
         unsigned int reserved : 2;
     } ALSConfig;
-    
+
     typedef struct {
         unsigned char highThreshold;
         unsigned char lowThreshold;
@@ -193,7 +203,7 @@ extern "C" {
         unsigned int mask_r : 1;
         unsigned int reserved : 3;
     } ProximityConfig;
-    
+
     typedef struct {
         unsigned char enterThreshold;
         unsigned char exitThreshold;
@@ -212,35 +222,35 @@ extern "C" {
         unsigned int waitTime : 3;
         unsigned int reserved2 : 5;
     } GestureConfig;
-    
+
     typedef struct {
         unsigned char up;
         unsigned char down;
         unsigned char left;
         unsigned char right;
     } GestureData;
-    
+
     void InitAPDS9960(void);
-    void APDS9960Start(unsigned char enable, unsigned char interrupts, 
+    void APDS9960Start(unsigned char enable, unsigned char interrupts,
             unsigned int wait, char wlong, char sleepAfterInt);
     unsigned char APDS9960GetStatus(void);
-    
+
     //Interrupt clear functions
     void APDS9960ClearAllInterrupts(void);
     void APDS9960ClearALSInterrupt(void);
     void APDS9960ClearProximityInterrupt(void);
-    
+
     //ALS functions
     void APDS9960GetALSData(RGBCdata *data);
     void APDS9960ReadALSConfig(ALSConfig *config);
     void APDS9960SetALSConfig(const ALSConfig *config);
     unsigned int APDS9960ALSMaxCount(const ALSConfig *config);
-    
+
     //Proximity functions
     unsigned char APDS9960GetProximityData(void);
     void APDS9960ReadProximityConfig(ProximityConfig *config);
     void APDS9960SetProximityConfig(const ProximityConfig *config);
-    
+
     //Gesture functions
     void APDS9960ReadGestureConfig(GestureConfig *config);
     void APDS9960SetGestureConfig(GestureConfig *config);
@@ -248,11 +258,13 @@ extern "C" {
     void APDS9960SetGestureMode(unsigned char mode);
     unsigned char APDS9960GetGestureMode(void);
     void APDS9960ClearGestureFIFO(void);
-    
+    unsigned char APDS9960ReadGestureFIFO(GestureData *data, unsigned char max);
+    unsigned char APDS9960ProcessGesture(GestureData *data, int len, char done);
+
     //LED current control
     void APDS9960SetLEDDriveCurrent(unsigned char ldrive, unsigned char boost);
     void APDS9960GetLEDDriveCurrent(unsigned char *ldrive, unsigned char *boost);
-    
+
 #ifdef	__cplusplus
 }
 #endif
