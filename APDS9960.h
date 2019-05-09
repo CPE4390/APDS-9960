@@ -253,7 +253,7 @@ extern "C" {
 
     //Gesture functions
     void APDS9960ReadGestureConfig(GestureConfig *config);
-    void APDS9960SetGestureConfig(GestureConfig *config);
+    void APDS9960SetGestureConfig(const GestureConfig *config);
     unsigned char APDS9960GetGestureStatus(void);
     void APDS9960SetGestureMode(unsigned char mode);
     unsigned char APDS9960GetGestureMode(void);

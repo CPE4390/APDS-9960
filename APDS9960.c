@@ -5,7 +5,8 @@
 void InitAPDS9960(void) {
     initPlatform();
     __delay_ms(6);
-    i2cWriteRegister(APDS_ENABLE, POWER_ON);
+    i2cWriteRegister(APDS_ENABLE, 0); //All off
+    APDS9960ClearGestureFIFO(); //make sure fifo is clear
 }
 
 void APDS9960Start(unsigned char enable, unsigned char interrupts,
@@ -223,7 +224,7 @@ void APDS9960ReadGestureConfig(GestureConfig *config) {
     config->dimensionSelect = i2cReadRegister(APDS_GCONF3);
 }
 
-void APDS9960SetGestureConfig(GestureConfig *config) {
+void APDS9960SetGestureConfig(const GestureConfig *config) {
     unsigned char regValue;
     i2cWriteRegister(APDS_GPENTH, config->enterThreshold & 0b11101111); //bit 4 must be 0 per datasheet
     i2cWriteRegister(APDS_GEXTH, config->exitThreshold);
@@ -276,13 +277,16 @@ void APDS9960ClearGestureFIFO(void) {
 }
 
 unsigned char APDS9960ReadGestureFIFO(GestureData *data, unsigned char max) {
-    unsigned char dataPoints;
-    dataPoints = i2cReadRegister(APDS_GFLVL);
-    if (dataPoints > max) {
-        dataPoints = max;
+    unsigned char available;
+    available = i2cReadRegister(APDS_GFLVL);
+    if (available == 0) {
+        return 0;
     }
-    i2cReadData(APDS_GFIFO_U, (unsigned char *)data, dataPoints * 4);
-    return dataPoints;
+    if (available > max) {
+        available = max;
+    }
+    i2cReadData(APDS_GFIFO_U, (unsigned char *)data, available * 4);
+    return available;
 }
 
 unsigned char APDS9960ProcessGesture(GestureData *data, int len, char done) {

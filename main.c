@@ -17,6 +17,9 @@ ProximityConfig proxConfig;
 ALSConfig alsConfig;
 GestureConfig gestureConfig;
 volatile char update = 0;
+GestureData gestureData[64];
+volatile char currentPos = 0;
+volatile char currentCount = 0;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -52,11 +55,32 @@ void main(void) {
     APDS9960SetProximityConfig(&proxConfig);
     
     //Configure gesture engine
-    
+    APDS9960ReadGestureConfig(&gestureConfig);
+    gestureConfig.enterThreshold = 100;
+    gestureConfig.exitThreshold = 75;
+    gestureConfig.exitPersistence = GPERS_2;
+    gestureConfig.exitMask = GMASK_ALL;
+    gestureConfig.fifoThreshold = FIFO_OVL_16;
+    gestureConfig.gain = GGAIN_4X;
+    gestureConfig.pulses = 2;
+    gestureConfig.pulseLength = PULSE_8US;
+    gestureConfig.waitTime = GWTIME_30_8MS;
+    APDS9960SetGestureConfig(&gestureConfig);
     
     APDS9960Start(PROXIMITY_ENABLE, PROXIMITY_INTERRUPT, 10, 0, 0);
+    //APDS9960Start(PROXIMITY_ENABLE | GESTURE_ENABLE, GESTURE_INTERRUPT, 0, 0, 0);
+    
+    printf("U\tD\tL\tR\r\n");
     while (1) {
-
+        if (update) {
+            update = 0;
+            int len  = currentPos + currentCount;
+            for (int i = currentPos; i < len; ++i) {
+                printf("%d\t%d\t%d\t%d\r\n", gestureData[i].up, 
+                        gestureData[i].down, gestureData[i].left, 
+                        gestureData[i].right);
+            }
+        }
     }
 }
 
@@ -97,6 +121,17 @@ void __interrupt(high_priority) HighIsr(void) {
         LATDbits.LATD1 ^= 1;
         APDS9960SetProximityConfig(&proxConfig);    
         APDS9960ClearAllInterrupts();
+        
+        //Get gesture data
+        currentCount = APDS9960ReadGestureFIFO(&gestureData[currentPos], 32);
+        if (currentCount > 0) {
+            update = 1;
+            if (currentPos == 0) {
+                currentPos = 32;
+            } else {
+                currentPos = 0;
+            }
+        }
         INTCON3bits.INT1IF = 0; //must clear the flag to avoid recursive interrupts
     }
 }
