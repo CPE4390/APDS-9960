@@ -15,7 +15,8 @@ RGBCdata rgbcData;
 unsigned char proxData;
 ProximityConfig proxConfig;
 ALSConfig alsConfig;
-volatile char toggle = 0;
+GestureConfig gestureConfig;
+volatile char update = 0;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -40,12 +41,19 @@ void main(void) {
     lprintf(1, "Chip ID = %#02x", id);
     __delay_ms(2000);
     ConfigInterrupts();
+    
+    //Configure proximity engine
+    APDS9960ReadProximityConfig(&proxConfig); //get defaults
     proxConfig.gain = PGAIN_8X;
     proxConfig.pulses = 8;
     proxConfig.highThreshold = 100;
     proxConfig.lowThreshold = 0;
     proxConfig.persistence = 2;
     APDS9960SetProximityConfig(&proxConfig);
+    
+    //Configure gesture engine
+    
+    
     APDS9960Start(PROXIMITY_ENABLE, PROXIMITY_INTERRUPT, 10, 0, 0);
     while (1) {
 
