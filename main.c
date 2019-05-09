@@ -2,6 +2,7 @@
 #include "LCD.h"
 #include "APDS9960.h"
 #include "platform.h"
+#include <stdio.h>
 
 #pragma config FOSC=HSPLL
 #pragma config WDTEN=OFF
@@ -21,6 +22,19 @@ void main(void) {
     InitPins();
     LCDInit();
     lprintf(0, "APDS9960 Demo");
+    
+    //Configure the USART for 115200 baud asynchronous transmission
+    TRISCbits.TRISC7 = 1;
+    TRISCbits.TRISC6 = 0;
+    SPBRG1 = 68; //115200 baud
+    SPBRGH1 = 0;
+    TXSTA1bits.BRGH = 1;
+    BAUDCON1bits.BRG16 = 1;
+    TXSTA1bits.SYNC = 0;
+    RCSTA1bits.SPEN = 1;
+    TXSTA1bits.TXEN = 1;
+    printf("APDS9960 Demo\r\n");
+    
     InitAPDS9960();
     char id = i2cReadRegister(APDS_ID);
     lprintf(1, "Chip ID = %#02x", id);
@@ -77,4 +91,9 @@ void __interrupt(high_priority) HighIsr(void) {
         APDS9960ClearAllInterrupts();
         INTCON3bits.INT1IF = 0; //must clear the flag to avoid recursive interrupts
     }
+}
+
+void putch(char c) {
+    while (TX1IF == 0);
+    TXREG1 = c;
 }
