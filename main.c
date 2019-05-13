@@ -58,17 +58,17 @@ void main(void) {
     APDS9960ReadGestureConfig(&gestureConfig);
     gestureConfig.enterThreshold = 100;
     gestureConfig.exitThreshold = 75;
-    gestureConfig.exitPersistence = GPERS_2;
+    gestureConfig.exitPersistence = GPERS_1;
     gestureConfig.exitMask = GMASK_ALL;
-    gestureConfig.fifoThreshold = FIFO_OVL_16;
+    gestureConfig.fifoThreshold = FIFO_OVL_4;
     gestureConfig.gain = GGAIN_4X;
-    gestureConfig.pulses = 2;
+    gestureConfig.pulses = 8;
     gestureConfig.pulseLength = PULSE_8US;
-    gestureConfig.waitTime = GWTIME_30_8MS;
+    gestureConfig.waitTime = GWTIME_0MS;
     APDS9960SetGestureConfig(&gestureConfig);
     
-    APDS9960Start(PROXIMITY_ENABLE, PROXIMITY_INTERRUPT, 10, 0, 0);
-    //APDS9960Start(PROXIMITY_ENABLE | GESTURE_ENABLE, GESTURE_INTERRUPT, 0, 0, 0);
+    //APDS9960Start(PROXIMITY_ENABLE, PROXIMITY_INTERRUPT, 10, 0, 0);
+    APDS9960Start(PROXIMITY_ENABLE | GESTURE_ENABLE, GESTURE_INTERRUPT, 0, 0, 0);
     
     printf("U\tD\tL\tR\r\n");
     while (1) {
