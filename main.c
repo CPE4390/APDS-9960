@@ -20,6 +20,7 @@ volatile char update = 0;
 GestureData gestureData[64];
 volatile char currentPos = 0;
 volatile char currentCount = 0;
+volatile char gestureRunning = 0;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -111,16 +112,16 @@ void __interrupt(high_priority) HighIsr(void) {
         INTCONbits.INT0IF = 0; //must clear the flag to avoid recursive interrupts
     }
     if (INTCON3bits.INT1IF == 1) {
-        if (proxConfig.highThreshold == 100) {
-            proxConfig.highThreshold = 255;
-            proxConfig.lowThreshold = 75;
-        } else {
-            proxConfig.highThreshold = 100;
-            proxConfig.lowThreshold = 0;
-        }
-        LATDbits.LATD1 ^= 1;
-        APDS9960SetProximityConfig(&proxConfig);    
-        APDS9960ClearAllInterrupts();
+//        if (proxConfig.highThreshold == 100) {
+//            proxConfig.highThreshold = 255;
+//            proxConfig.lowThreshold = 75;
+//        } else {
+//            proxConfig.highThreshold = 100;
+//            proxConfig.lowThreshold = 0;
+//        }
+//        LATDbits.LATD1 ^= 1;
+//        APDS9960SetProximityConfig(&proxConfig);    
+//        APDS9960ClearAllInterrupts();
         
         //Get gesture data
         currentCount = APDS9960ReadGestureFIFO(&gestureData[currentPos], 32);

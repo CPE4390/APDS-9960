@@ -263,7 +263,7 @@ void APDS9960SetGestureMode(unsigned char mode) {
     i2cWriteRegister(APDS_GCONF4, regValue);
 }
 
-unsigned char APDS9960GetGestureMode(void) {
+unsigned char APDS9960GestureActive(void) {
     unsigned char mode;
     mode = i2cReadRegister(APDS_GCONF4);
     return mode & 0b00000001;
