@@ -21,6 +21,7 @@ GestureData gestureData[64];
 volatile char currentPos = 0;
 volatile char currentCount = 0;
 volatile char gestureRunning = 0;
+volatile char status = 0;
 
 void main(void) {
     OSCTUNEbits.PLLEN = 1;
@@ -61,7 +62,7 @@ void main(void) {
     gestureConfig.exitThreshold = 75;
     gestureConfig.exitPersistence = GPERS_1;
     gestureConfig.exitMask = GMASK_ALL;
-    gestureConfig.fifoThreshold = FIFO_OVL_4;
+    gestureConfig.fifoThreshold = FIFO_OVL_8;
     gestureConfig.gain = GGAIN_4X;
     gestureConfig.pulses = 8;
     gestureConfig.pulseLength = PULSE_8US;
@@ -71,15 +72,22 @@ void main(void) {
     //APDS9960Start(PROXIMITY_ENABLE, PROXIMITY_INTERRUPT, 10, 0, 0);
     APDS9960Start(PROXIMITY_ENABLE | GESTURE_ENABLE, GESTURE_INTERRUPT, 0, 0, 0);
     
+    int count = 0;
     printf("U\tD\tL\tR\r\n");
     while (1) {
         if (update) {
             update = 0;
             int len  = currentPos + currentCount;
+            printf("Status=%#02x Count=%d\r\n", status, currentCount);
             for (int i = currentPos; i < len; ++i) {
-                printf("%d\t%d\t%d\t%d\r\n", gestureData[i].up, 
+                ++count;
+                printf("%d:%d\t%d\t%d\t%d\r\n", count, gestureData[i].up, 
                         gestureData[i].down, gestureData[i].left, 
                         gestureData[i].right);
+            }
+            if (!gestureRunning) {
+                printf("Done\r\n\r\n");
+                count = 0;
             }
         }
     }
@@ -124,7 +132,8 @@ void __interrupt(high_priority) HighIsr(void) {
 //        APDS9960ClearAllInterrupts();
         
         //Get gesture data
-        currentCount = APDS9960ReadGestureFIFO(&gestureData[currentPos], 32);
+        status = APDS9960GetGestureStatus();
+        currentCount = APDS9960ReadGestureFIFO(&gestureData[currentPos], 8);
         if (currentCount > 0) {
             update = 1;
             if (currentPos == 0) {
@@ -132,6 +141,7 @@ void __interrupt(high_priority) HighIsr(void) {
             } else {
                 currentPos = 0;
             }
+            gestureRunning = APDS9960GetGestureStatus() & GVALID;
         }
         INTCON3bits.INT1IF = 0; //must clear the flag to avoid recursive interrupts
     }
